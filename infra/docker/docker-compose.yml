@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: pension-rag-es
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # nori(한국어 분석기) 플러그인은 커스텀 이미지 빌드 시 추가 예정
+  # Dockerfile.elasticsearch 참고 (TODO)
+
+  rag-core:
+    build:
+      context: ../../rag-core
+      dockerfile: ../infra/docker/Dockerfile.rag-core
+    container_name: pension-rag-core
+    environment:
+      - ES_URL=http://elasticsearch:9200
+    ports:
+      - "8000:8000"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: ../../gateway
+      dockerfile: ../infra/docker/Dockerfile.gateway
+    container_name: pension-rag-gateway
+    environment:
+      - RAG_CORE_URL=http://rag-core:8000
+    ports:
+      - "8080:8080"
+    depends_on:
+      - rag-core
+
+volumes:
+  es_data:

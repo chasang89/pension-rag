@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Java / Gradle
+.gradle/
+build/
+*.class
+out/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Env / secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Data
+data/raw/
+data/processed/
+*.jsonl
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db
