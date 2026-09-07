@@ -24,4 +24,10 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
+// bootJar와 별개로 생성되는 *-plain.jar를 끈다.
+// 안 끄면 build/libs에 jar가 두 개 생겨서 Dockerfile의 COPY *.jar가 실패한다.
+tasks.named<Jar>("jar") {
+    enabled = false
+}
+
 // TODO: RAG Core(FastAPI) 프록시 라우팅, 인증(JWT), 요청 검증 추가

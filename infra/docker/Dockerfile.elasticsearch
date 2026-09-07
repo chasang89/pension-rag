@@ -1,0 +1,7 @@
+# Elasticsearch 8.15.0 + nori(한국어 형태소 분석기)
+#
+# 공식 이미지에는 nori가 포함되어 있지 않다. 한국어 법령 텍스트의 BM25 검색
+# 품질이 형태소 분석에 크게 좌우되므로 플러그인을 미리 설치한 커스텀 이미지를 쓴다.
+FROM docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+
+RUN bin/elasticsearch-plugin install --batch analysis-nori

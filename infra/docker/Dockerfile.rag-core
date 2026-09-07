@@ -1,0 +1,43 @@
+# RAG Core (FastAPI)
+#
+# 빌드 컨텍스트는 저장소 루트다. compose의 build.context 참고.
+#   docker build -f infra/docker/Dockerfile.rag-core .
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+# healthcheck용 curl
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# sentence-transformers가 torch를 끌고 오는데, PyPI 기본 휠은 CUDA 포함이라 2GB가 넘는다.
+# CPU 전용 휠을 먼저 깔아두면 이미지가 훨씬 가벼워진다.
+RUN pip install --no-cache-dir \
+        --index-url https://download.pytorch.org/whl/cpu \
+        torch
+
+COPY rag-core/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY rag-core/app ./app
+COPY rag-core/scripts ./scripts
+
+# 임베딩 모델(bge-m3) 캐시 위치. compose에서 볼륨으로 잡아 재다운로드를 막는다.
+ENV HF_HOME=/app/.cache/huggingface
+
+RUN useradd --create-home --uid 10001 appuser \
+ && mkdir -p /app/.cache/huggingface \
+ && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
+    CMD curl -fs http://localhost:8000/health || exit 1
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

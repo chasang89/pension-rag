@@ -1,0 +1,26 @@
+# API Gateway (Kotlin + Spring Boot WebFlux)
+#
+# 빌드 컨텍스트는 저장소 루트다. compose의 build.context 참고.
+# gradle wrapper가 없으므로 gradle이 설치된 이미지로 빌드한다.
+
+FROM gradle:8.9-jdk17 AS build
+WORKDIR /build
+
+# 의존성 레이어를 먼저 굳혀서, 소스만 바뀌었을 때 재다운로드를 피한다.
+COPY gateway/settings.gradle.kts gateway/build.gradle.kts ./
+RUN gradle --no-daemon --refresh-dependencies dependencies > /dev/null 2>&1 || true
+
+COPY gateway/src ./src
+RUN gradle --no-daemon bootJar
+
+FROM eclipse-temurin:17-jre
+WORKDIR /app
+
+RUN useradd --create-home --uid 10001 appuser
+USER appuser
+
+COPY --from=build /build/build/libs/*.jar app.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "/app/app.jar"]
